@@ -1,6 +1,6 @@
 "use strict";
 
-import clear from "rollup-plugin-clear";
+import del from "rollup-plugin-delete";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import typescript from "rollup-plugin-typescript2";
@@ -38,7 +38,8 @@ function getOptions(arenaSrc) {
     },
 
     plugins: [
-      clear({ targets: targetArena === "" ? ["dist"] : [outDir] }), // If targeted build, only clear target sub-directory
+      // If targeted build, only clear target sub-directory
+      del({ targets: targetArena === "" ? ["dist"] : [outDir] }),
       resolve({ rootDir: "src" }),
       commonjs(),
       typescript({ tsconfig: "./tsconfig.json" })
