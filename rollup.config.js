@@ -38,8 +38,7 @@ function getOptions(arenaSrc) {
     },
 
     plugins: [
-      // If targeted build, only clear target sub-directory
-      del({ targets: targetArena === "" ? ["dist"] : [outDir] }),
+      del({ targets: [outDir] }),
       resolve({ rootDir: "src" }),
       commonjs(),
       typescript({ tsconfig: "./tsconfig.json" })
@@ -49,13 +48,15 @@ function getOptions(arenaSrc) {
 }
 
 const arenas = fg.sync(`src/*arena_*${targetArena}*`, { onlyDirectories: true });
+console.log(`find arenas: ${arenas}`)
+
 if (arenas.length === 0) {
   throw new Error("No matching arenas found in src/. Exiting");
 } else {
   if (targetArena === "") {
     console.log(`No arena targeted. Building all ${arenas.length} arenas.`);
   } else {
-    console.log(`Buidling ${arenas.length} arena(s) for target "${targetArena}"`);
+    console.log(`Building ${arenas.length} arena(s) for target "${targetArena}"`);
   }
 }
 

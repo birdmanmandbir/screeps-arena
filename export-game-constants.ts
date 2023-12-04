@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import * as game from "game";
-import { getTime } from "game/utils";
+import { getTicks } from "game/utils";
 
 function doExport(name: any, obj: any) {
   console.log(name);
@@ -14,7 +14,7 @@ function doExport(name: any, obj: any) {
   }
 }
 export const loop = (): void => {
-  if (getTime() === 1) {
+  if (getTicks() === 1) {
     doExport("game", game);
   }
 };
