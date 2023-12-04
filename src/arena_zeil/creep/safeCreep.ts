@@ -1,5 +1,12 @@
 import { ScoreCollector } from "arena/prototypes";
-import { BodyPartConstant, CreepActionReturnCode, ERR_NOT_IN_RANGE, OK, ResourceConstant, ScreepsReturnCode } from "game/constants";
+import {
+  BodyPartConstant,
+  CreepActionReturnCode,
+  ERR_NOT_IN_RANGE,
+  OK,
+  ResourceConstant,
+  ScreepsReturnCode
+} from "game/constants";
 import { Creep, Source, Structure, StructureConstant } from "game/prototypes";
 
 export function creep2SafeCreep(creep: Creep): SafeCreep {
@@ -11,7 +18,7 @@ export function creep2SafeCreep(creep: Creep): SafeCreep {
 export class SafeCreep {
   creep: Creep;
   constructor(creep: Creep) {
-    this.creep = creep
+    this.creep = creep;
   }
 
   attack(target: Creep | Structure<StructureConstant>): CreepActionReturnCode {
@@ -39,6 +46,15 @@ export class SafeCreep {
       this.creep.moveTo(target);
     }
     return err;
+  }
+
+  autoHeal(targets: SafeCreep[]): CreepActionReturnCode {
+    const creepsNeedToHeal = targets.filter(t => !t.isHealthy()).map(c => c.creep)
+    const target = this.creep.findClosestByPath(creepsNeedToHeal)
+    if (!target) {
+      return OK
+    }
+    return this.heal(target)
   }
 
   rangedHeal(target: Creep): CreepActionReturnCode {
@@ -69,6 +85,20 @@ export class SafeCreep {
     return err;
   }
 
+  // TODO container maybe also need this
+  harvestOrTransfer(
+    src: Source,
+    dest: Structure<StructureConstant>,
+    resourceType: ResourceConstant,
+    amount?: number | undefined
+  ): ScreepsReturnCode {
+    if (this.creep.store.getFreeCapacity(resourceType)) {
+      return this.harvest(src)
+    } else {
+      return this.transfer(dest, resourceType, amount)
+    }
+  }
+
   withdraw(
     target: Structure<StructureConstant>,
     resourceType: ResourceConstant,
@@ -81,11 +111,15 @@ export class SafeCreep {
     return err;
   }
 
+  isHealthy(): boolean {
+    return this.creep.hits === this.creep.hitsMax
+  }
+
   isMatchKind(kind: BodyPartConstant): boolean {
     return this.creep.body.some(bodyPart => bodyPart.type === kind);
   }
 
   isMy(): boolean {
-    return this.creep.my
+    return this.creep.my;
   }
 }

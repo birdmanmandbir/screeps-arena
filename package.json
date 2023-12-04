@@ -11,7 +11,8 @@
     "build": "rollup -c --config-",
     "test": "npm run test-unit",
     "test-unit": "mocha test/unit/**/*.ts",
-    "watch": "rollup -cw --config-"
+    "watch": "rollup -cw --config-",
+    "deploy-tutorial": "cp -r dist/arena_zeil/* ~/ScreepsArena/tutorial-final_test/"
   },
   "repository": {
     "type": "git",

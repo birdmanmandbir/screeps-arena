@@ -1,4 +1,4 @@
-import { ATTACK, BodyPartConstant, CARRY, HEAL, RANGED_ATTACK, WORK } from "game/constants";
+import { ATTACK, BodyPartConstant, CARRY, HEAL, MOVE, RANGED_ATTACK, TOUGH, WORK } from "game/constants";
 import { Creep } from "game/prototypes";
 import { getObjectsByPrototype } from "game/utils";
 import { SafeCreep } from "./safeCreep";
@@ -28,4 +28,68 @@ export function getCreepsByKind(): CreepsByKind {
     carriers: filterCreepsByKind(myCreeps, CARRY),
     enemies: enemies
   };
+}
+
+export function logCreeps() {
+  const { workers, attackers, rangedAttackers, healers, enemies } = getCreepsByKind();
+
+  console.log(`
+attackers: ${attackers.length}
+workers: ${workers.length}
+rangedAttackers: ${rangedAttackers.length}
+healers: ${healers.length}
+enemies: ${enemies.length}
+`);
+}
+
+export class BodyBuilder {
+  bodyParts: BodyPartConstant[] = [];
+  constructor() {}
+
+  put(kind: BodyPartConstant, num = 1) {
+    for (let i = 0; i < num; i++) {
+      this.bodyParts.push(kind);
+    }
+  }
+
+  attack(num = 1): BodyBuilder{
+    this.put(ATTACK, num);
+    return this
+  }
+
+  carry(num = 1): BodyBuilder {
+    this.put(CARRY, num);
+    return this
+  }
+
+  rangedAttack(num = 1):BodyBuilder {
+    this.put(RANGED_ATTACK, num);
+    return this
+  }
+
+  heal(num = 1): BodyBuilder {
+    this.put(HEAL, num);
+    return this
+  }
+
+  work(num = 1):BodyBuilder {
+    this.put(WORK, num);
+    return this
+  }
+
+  tough(num = 1):BodyBuilder {
+    this.put(TOUGH, num)
+    return this
+  }
+
+  move(ratio = 1.0):BodyBuilder {
+    const currentPartNum = this.bodyParts.length;
+    const moveNum = Math.ceil(currentPartNum * ratio);
+    this.put(MOVE, moveNum)
+    return this
+  }
+
+  build(): BodyPartConstant[] {
+    return this.bodyParts
+  }
 }
