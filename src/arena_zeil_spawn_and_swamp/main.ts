@@ -1,19 +1,28 @@
 import { BodyPartConstant, RESOURCE_ENERGY } from "game/constants";
-import { Creep, Source, StructureSpawn } from "game/prototypes";
-import { getObjectsByPrototype } from "game/utils";
+import { Creep, Structure, StructureConstant, StructureContainer, StructureSpawn } from "game/prototypes";
+import { findInRange, getObjectsByPrototype } from "game/utils";
 import { BodyBuilder, getCreepsByKind } from "./creep";
 import { SafeCreep } from "./creep/safeCreep";
 import { getStructureByKind } from "./structure";
 
-const rangedAttackerBody = new BodyBuilder().rangedAttack(2).tough(0).move(2).build();
-const attackerBody = new BodyBuilder().attack(2).tough(1).move(1).build();
-const workerBody = new BodyBuilder().work(2).carry(1).move().build();
-const healerBody = new BodyBuilder().heal(1).move().build();
+const rangedAttackerBody = new BodyBuilder().rangedAttack(2).tough(0).move(4).build();
+const attackerBody = new BodyBuilder().attack(2).tough(0).move(4).build();
+const workerBody = new BodyBuilder().work(1).carry(1).move(2).build();
+const healerBody = new BodyBuilder().heal(2).move(2).build();
+
+const rangedAttackerExpectNum = 4;
+const attackerExpectNum = 10;
+const workerExpectNum = 3;
+const healerExpectNum = 2;
+
+const collectSiteDelta = { x: 0, y: -20 };
 
 enum BattleStage {
   SpawnWorker,
   SpawnArmy,
-  Attack
+  Defense,
+  Attack,
+  AttackBase
 }
 
 let stage = BattleStage.SpawnWorker;
@@ -23,6 +32,7 @@ export function loop(): void {
   const { workers, attackers, rangedAttackers, healers, enemies } = getCreepsByKind();
   const { spawners } = getStructureByKind();
   const mySpawn = spawners.find(s => s.my) as StructureSpawn;
+  const enemySpawn = spawners.find(s => !s.my) as StructureSpawn;
   const allKindAttackers = [...attackers, ...rangedAttackers];
 
   switch (stage) {
@@ -32,7 +42,7 @@ export function loop(): void {
           {
             bodyParts: workerBody,
             num: workers.length,
-            expectNum: 1
+            expectNum: workerExpectNum
           }
         ])
       ) {
@@ -46,20 +56,28 @@ export function loop(): void {
           {
             bodyParts: attackerBody,
             num: attackers.length,
-            expectNum: 1
+            expectNum: attackerExpectNum
           },
           {
             bodyParts: rangedAttackerBody,
             num: rangedAttackers.length,
-            expectNum: 1
+            expectNum: rangedAttackerExpectNum
           },
           {
             bodyParts: healerBody,
             num: healers.length,
-            expectNum: 0
+            expectNum: healerExpectNum
           }
         ])
       ) {
+        stage = BattleStage.Attack;
+      }
+      break;
+    case BattleStage.Defense:
+      doDefense(allKindAttackers, enemies);
+      moveHealersToAttackers(healers, allKindAttackers);
+      doHeal(healers, allKindAttackers);
+      if (!needDefense(mySpawn, enemies)) {
         stage = BattleStage.Attack;
       }
       break;
@@ -67,31 +85,62 @@ export function loop(): void {
       doAttack(allKindAttackers, enemies);
       moveHealersToAttackers(healers, allKindAttackers);
       doHeal(healers, allKindAttackers);
+      if (needDefense(mySpawn, enemies)) {
+        stage = BattleStage.Defense;
+      }
+      if (needAttackBase(enemySpawn, enemies)) {
+        stage = BattleStage.AttackBase;
+      }
       break;
+    case BattleStage.AttackBase:
+      doAttack(allKindAttackers, enemySpawn);
+      moveHealersToAttackers(healers, allKindAttackers);
+      doHeal(healers, allKindAttackers);
+      if (needDefense(mySpawn, enemies)) {
+        stage = BattleStage.Defense;
+      }
     default:
       break;
   }
   runWorkers(workers, mySpawn);
 }
 
+function needDefense(mySpawn: StructureSpawn, enemies: Creep[]): boolean {
+  const defenseRange = 28;
+  return findInRange(mySpawn, enemies, defenseRange).length !== 0;
+}
+
+function needAttackBase(enemySpawn: StructureSpawn, enemies: Creep[]): boolean {
+  const attackCreepRange = 28;
+  return findInRange(enemySpawn, enemies, attackCreepRange).length === 0;
+}
+
 function runWorkers(workers: SafeCreep[], mySpawn: StructureSpawn) {
-  const source = getObjectsByPrototype(Source)[0];
-  for (const w of workers) {
-    w.harvestOrTransfer(source, mySpawn, RESOURCE_ENERGY);
+  const containers = getObjectsByPrototype(StructureContainer);
+  const myContainers = findInRange(mySpawn, containers, 10);
+  for (let i = 0; i < workers.length; i++) {
+    const containerId = i % containers.length;
+    workers[i].harvestOrTransfer(myContainers[containerId], mySpawn, RESOURCE_ENERGY);
   }
 }
 
 function collectArmy(members: SafeCreep[], mySpawn: StructureSpawn) {
   const collectPoint = {
-    x: mySpawn.x - 3,
-    y: mySpawn.y
+    x: mySpawn.x + collectSiteDelta.x,
+    y: mySpawn.y + collectSiteDelta.y
   };
   for (const a of members) {
     a.creep.moveTo(collectPoint);
   }
 }
 
-function doAttack(attackers: SafeCreep[], enemies: Creep[]) {
+function doAttack(attackers: SafeCreep[], enemies: Creep[] | Structure<StructureConstant>) {
+  for (const a of attackers) {
+    a.autoAttack(enemies);
+  }
+}
+
+function doDefense(attackers: SafeCreep[], enemies: Creep[]) {
   for (const a of attackers) {
     a.autoDefense(enemies, 10);
   }
@@ -148,7 +197,7 @@ function doSpawnRequests(mySpawn: StructureSpawn, requests: SpawnRequest[]): boo
       console.log(`spawn failed with err ${err}`);
       return false;
     } else {
-      rq.num++
+      rq.num++;
     }
   }
   for (const rq of requests) {

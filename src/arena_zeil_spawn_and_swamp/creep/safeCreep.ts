@@ -9,7 +9,7 @@ import {
   ResourceConstant,
   ScreepsReturnCode
 } from "game/constants";
-import { Creep, Source, Structure, StructureConstant } from "game/prototypes";
+import { Creep, Source, Structure, StructureConstant, StructureContainer } from "game/prototypes";
 import { findInRange } from "game/utils";
 
 export function creep2SafeCreep(creep: Creep): SafeCreep {
@@ -40,7 +40,25 @@ export class SafeCreep {
     return err;
   }
 
-  autoAttack(target: Creep | Structure<StructureConstant>) {
+  selectTarget(targets: Creep[]): Creep | null {
+    if (targets.length === 0) {
+      return null
+    }
+    const accurateSelectRange = 30
+    if (this.creep.findInRange(targets, accurateSelectRange).length === 0) {
+      return targets[0]
+    }
+    return this.creep.findClosestByPath(targets);
+  }
+
+  autoAttack(targetsOrStructure: Creep[] | Structure<StructureConstant>) {
+    let target: Creep | Structure<StructureConstant> | null;
+    if (Array.isArray(targetsOrStructure)) {
+      target = this.selectTarget(targetsOrStructure)
+      if (!target) return;
+    } else {
+      target = targetsOrStructure
+    }
     if (this.isMatchKind(ATTACK)) {
       this.attack(target);
     }
@@ -50,9 +68,9 @@ export class SafeCreep {
   }
 
   autoDefense(targets: Creep[], range: number) {
-    const targetsInRange = findInRange(this.creep, targets, range)
+    const targetsInRange = findInRange(this.creep, targets, range);
     if (targetsInRange.length > 0) {
-      this.autoAttack(targetsInRange[0])
+      this.autoAttack(targetsInRange);
     }
   }
 
@@ -68,12 +86,12 @@ export class SafeCreep {
   }
 
   autoHeal(targets: SafeCreep[]): CreepActionReturnCode {
-    const creepsNeedToHeal = targets.filter(t => !t.isHealthy()).map(c => c.creep)
-    const target = this.creep.findClosestByPath(creepsNeedToHeal)
+    const creepsNeedToHeal = targets.filter(t => !t.isHealthy()).map(c => c.creep);
+    const target = this.creep.findClosestByPath(creepsNeedToHeal);
     if (!target) {
-      return OK
+      return OK;
     }
-    return this.heal(target)
+    return this.heal(target);
   }
 
   rangedHeal(target: Creep): CreepActionReturnCode {
@@ -106,15 +124,21 @@ export class SafeCreep {
 
   // TODO container maybe also need this
   harvestOrTransfer(
-    src: Source,
+    src: Source | StructureContainer,
     dest: Structure<StructureConstant>,
     resourceType: ResourceConstant,
     amount?: number | undefined
   ): ScreepsReturnCode {
     if (this.creep.store.getFreeCapacity(resourceType)) {
-      return this.harvest(src)
+      if (src instanceof Source) {
+        return this.harvest(src);
+      }
+      if (src instanceof StructureContainer) {
+        return this.withdraw(src, resourceType);
+      }
+      throw `not implement harvest for this type`;
     } else {
-      return this.transfer(dest, resourceType, amount)
+      return this.transfer(dest, resourceType, amount);
     }
   }
 
@@ -131,7 +155,7 @@ export class SafeCreep {
   }
 
   isHealthy(): boolean {
-    return this.creep.hits === this.creep.hitsMax
+    return this.creep.hits === this.creep.hitsMax;
   }
 
   isMatchKind(kind: BodyPartConstant): boolean {
