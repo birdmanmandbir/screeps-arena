@@ -8,7 +8,7 @@
   "scripts": {
     "lint": "eslint \"src/**/*.ts\"",
     "format": "prettier --write --ignore-unknown --ignore-path .gitignore '**/*'",
-    "build": "rollup -c",
+    "build": "rollup -c && cp -r dist/arena_zeil_spawn_and_swamp/* /Users/neil/ScreepsArena/alpha-spawn_and_swamp/",
     "test": "npm run test-unit",
     "test-unit": "mocha test/unit/**/*.ts",
     "watch": "rollup -cw --config-",

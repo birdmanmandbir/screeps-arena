@@ -6,7 +6,7 @@ import commonjs from "@rollup/plugin-commonjs";
 import typescript from "rollup-plugin-typescript2";
 import fg from "fast-glob";
 
-let targetArena = "zeil";
+let targetArena = "zeil_spawn_and_swamp";
 
 function getOptions(arenaSrc) {
   const outDir = arenaSrc.replace("src/", "dist/");
@@ -35,14 +35,14 @@ function getOptions(arenaSrc) {
       del({ targets: [outDir] }),
       resolve({ rootDir: "src" }),
       commonjs(),
-      typescript({ tsconfig: "./tsconfig.json" })
+      typescript({ tsconfig: "./tsconfig.json" }),
     ]
   };
   return options;
 }
 
 const arenas = fg.sync(`src/*arena_*${targetArena}*`, { onlyDirectories: true });
-console.log(`find arenas: ${arenas}`)
+console.log(`find arenas: ${arenas}`);
 
 if (arenas.length === 0) {
   throw new Error("No matching arenas found in src/. Exiting");
