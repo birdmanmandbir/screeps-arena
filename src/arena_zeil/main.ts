@@ -1,13 +1,13 @@
-import { getObjectsByPrototype, getTicks } from "game/utils";
-import { BodyBuilder, getCreepsByKind, logCreeps } from "./creep";
-import { getStructureByKind } from "./structure";
-import { Source, StructureSpawn } from "game/prototypes";
+import { BodyPartConstant, RESOURCE_ENERGY } from "game/constants";
+import { Creep, Source, StructureSpawn } from "game/prototypes";
+import { getObjectsByPrototype } from "game/utils";
+import { BodyBuilder, getCreepsByKind } from "./creep";
 import { SafeCreep } from "./creep/safeCreep";
-import { ATTACK, BodyPartConstant, RANGED_ATTACK, RESOURCE_ENERGY } from "game/constants";
+import { getStructureByKind } from "./structure";
 
 const rangedAttackerBody = new BodyBuilder().rangedAttack(2).tough(0).move(2).build();
-const attackerBody = new BodyBuilder().attack(1).tough(0).move(2).build();
-const workerBody = new BodyBuilder().work(1).carry(1).move().build();
+const attackerBody = new BodyBuilder().attack(2).tough(1).move(1).build();
+const workerBody = new BodyBuilder().work(2).carry(1).move().build();
 const healerBody = new BodyBuilder().heal(1).move().build();
 
 enum BattleStage {
@@ -17,11 +17,9 @@ enum BattleStage {
 }
 
 let stage = BattleStage.SpawnWorker;
-let requestsQueue: SpawnRequest[] = [];
 export function loop(): void {
-  console.log(`The time is ${getTicks()}`);
-  logCreeps();
-  console.log(`current stage: ${stage}`)
+  // logCreeps();
+  // console.log(`current stage: ${stage}`)
   const { workers, attackers, rangedAttackers, healers, enemies } = getCreepsByKind();
   const { spawners } = getStructureByKind();
   const mySpawn = spawners.find(s => s.my) as StructureSpawn;
@@ -42,17 +40,18 @@ export function loop(): void {
       }
       break;
     case BattleStage.SpawnArmy:
+      collectArmy([...allKindAttackers, ...healers], mySpawn);
       if (
         doSpawnRequests(mySpawn, [
           {
             bodyParts: attackerBody,
             num: attackers.length,
-            expectNum: 2
+            expectNum: 1
           },
           {
             bodyParts: rangedAttackerBody,
             num: rangedAttackers.length,
-            expectNum: 0
+            expectNum: 1
           },
           {
             bodyParts: healerBody,
@@ -62,9 +61,6 @@ export function loop(): void {
         ])
       ) {
         stage = BattleStage.Attack;
-        doAttack(allKindAttackers, enemies);
-        moveHealersToAttackers(healers, allKindAttackers);
-        doHeal(healers, allKindAttackers);
       }
       break;
     case BattleStage.Attack:
@@ -76,7 +72,6 @@ export function loop(): void {
       break;
   }
   runWorkers(workers, mySpawn);
-  collectArmy([...allKindAttackers, ...healers], mySpawn);
 }
 
 function runWorkers(workers: SafeCreep[], mySpawn: StructureSpawn) {
@@ -89,23 +84,16 @@ function runWorkers(workers: SafeCreep[], mySpawn: StructureSpawn) {
 function collectArmy(members: SafeCreep[], mySpawn: StructureSpawn) {
   const collectPoint = {
     x: mySpawn.x - 3,
-    y: mySpawn.y - 3
+    y: mySpawn.y
   };
   for (const a of members) {
     a.creep.moveTo(collectPoint);
   }
 }
 
-function doAttack(attackers: SafeCreep[], enemies: SafeCreep[]) {
+function doAttack(attackers: SafeCreep[], enemies: Creep[]) {
   for (const a of attackers) {
-    for (const e of enemies) {
-      if (a.isMatchKind(ATTACK)) {
-        a.attack(e.creep);
-      }
-      if (a.isMatchKind(RANGED_ATTACK)) {
-        a.attack(e.creep);
-      }
-    }
+    a.autoDefense(enemies, 10);
   }
 }
 
@@ -137,7 +125,7 @@ function doTasksSeq(tasks: taskFunction[]): boolean {
     if (!tasks[i]()) {
       return false;
     }
-    console.log(`finish task ${i} at tick ${getTicks()}`);
+    console.log(`finish task ${i}`);
   }
 
   return true;
@@ -152,15 +140,23 @@ function doSpawnRequests(mySpawn: StructureSpawn, requests: SpawnRequest[]): boo
     // expect: ${rq.expectNum}
     // `);
     if (rq.expectNum <= rq.num) {
-      continue
+      continue;
     }
-    mySpawn.spawnCreep(rq.bodyParts);
+    console.log(`try spawn new creep, body: ${rq.bodyParts} expect: ${rq.expectNum} num: ${rq.num}`);
+    const err = mySpawn.spawnCreep(rq.bodyParts).error;
+    if (err) {
+      console.log(`spawn failed with err ${err}`);
+      return false;
+    } else {
+      rq.num++
+    }
   }
   for (const rq of requests) {
     if (rq.expectNum > rq.num) {
+      console.log(`spawn failed with err still not match, expect ${rq.expectNum} but current is ${rq.num}`);
       return false;
     }
   }
+  console.log(`finish a spawn`);
   return true;
 }
-

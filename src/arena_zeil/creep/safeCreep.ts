@@ -1,13 +1,16 @@
 import { ScoreCollector } from "arena/prototypes";
 import {
+  ATTACK,
   BodyPartConstant,
   CreepActionReturnCode,
   ERR_NOT_IN_RANGE,
   OK,
+  RANGED_ATTACK,
   ResourceConstant,
   ScreepsReturnCode
 } from "game/constants";
 import { Creep, Source, Structure, StructureConstant } from "game/prototypes";
+import { findInRange } from "game/utils";
 
 export function creep2SafeCreep(creep: Creep): SafeCreep {
   return new SafeCreep(creep);
@@ -35,6 +38,22 @@ export class SafeCreep {
       this.creep.moveTo(target);
     }
     return err;
+  }
+
+  autoAttack(target: Creep | Structure<StructureConstant>) {
+    if (this.isMatchKind(ATTACK)) {
+      this.attack(target);
+    }
+    if (this.isMatchKind(RANGED_ATTACK)) {
+      this.rangedAttack(target);
+    }
+  }
+
+  autoDefense(targets: Creep[], range: number) {
+    const targetsInRange = findInRange(this.creep, targets, range)
+    if (targetsInRange.length > 0) {
+      this.autoAttack(targetsInRange[0])
+    }
   }
 
   heal(target: Creep): CreepActionReturnCode {

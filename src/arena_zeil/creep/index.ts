@@ -1,6 +1,6 @@
 import { ATTACK, BodyPartConstant, CARRY, HEAL, MOVE, RANGED_ATTACK, TOUGH, WORK } from "game/constants";
 import { Creep } from "game/prototypes";
-import { getObjectsByPrototype } from "game/utils";
+import { getObjectsByPrototype, getTicks } from "game/utils";
 import { SafeCreep } from "./safeCreep";
 
 export function filterCreepsByKind(creeps: SafeCreep[], kind: BodyPartConstant): SafeCreep[] {
@@ -13,7 +13,7 @@ export interface CreepsByKind {
   workers: SafeCreep[];
   rangedAttackers: SafeCreep[];
   carriers: SafeCreep[];
-  enemies: SafeCreep[];
+  enemies: Creep[];
 }
 
 export function getCreepsByKind(): CreepsByKind {
@@ -26,7 +26,7 @@ export function getCreepsByKind(): CreepsByKind {
     workers: filterCreepsByKind(myCreeps, WORK),
     rangedAttackers: filterCreepsByKind(myCreeps, RANGED_ATTACK),
     carriers: filterCreepsByKind(myCreeps, CARRY),
-    enemies: enemies
+    enemies: enemies.map(e => e.creep)
   };
 }
 
