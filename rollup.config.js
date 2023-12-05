@@ -6,13 +6,7 @@ import commonjs from "@rollup/plugin-commonjs";
 import typescript from "rollup-plugin-typescript2";
 import fg from "fast-glob";
 
-let targetArena = "";
-if (process.argv[3] === "--config-") {
-  // we running dynamic mode
-  targetArena = process.argv[4] || "";
-} else if (process.argv[3] === "--environment") {
-  targetArena = process.env.DEST;
-}
+let targetArena = "zeil";
 
 function getOptions(arenaSrc) {
   const outDir = arenaSrc.replace("src/", "dist/");
