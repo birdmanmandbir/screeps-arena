@@ -31,11 +31,11 @@ export function getCreepsByKind(): CreepsByKind {
 }
 
 export function logCreeps() {
-  const { workers, attackers, rangedAttackers, healers, enemies } = getCreepsByKind();
+  const { carriers, attackers, rangedAttackers, healers, enemies } = getCreepsByKind();
 
   console.log(`
 attackers: ${attackers.length}
-workers: ${workers.length}
+carriers: ${carriers.length}
 rangedAttackers: ${rangedAttackers.length}
 healers: ${healers.length}
 enemies: ${enemies.length}

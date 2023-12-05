@@ -1,21 +1,19 @@
 import { BodyPartConstant, RESOURCE_ENERGY } from "game/constants";
-import { Creep, Structure, StructureConstant, StructureContainer, StructureSpawn } from "game/prototypes";
-import { findInRange, getObjectsByPrototype } from "game/utils";
+import { Creep, RoomPosition, Structure, StructureConstant, StructureContainer, StructureSpawn } from "game/prototypes";
+import { findInRange, getObjectsByPrototype, getTicks } from "game/utils";
 import { BodyBuilder, getCreepsByKind } from "./creep";
 import { SafeCreep } from "./creep/safeCreep";
 import { getStructureByKind } from "./structure";
 
-const rangedAttackerBody = new BodyBuilder().rangedAttack(2).tough(0).move(4).build();
-const attackerBody = new BodyBuilder().attack(2).tough(0).move(4).build();
-const workerBody = new BodyBuilder().work(1).carry(1).move(2).build();
-const healerBody = new BodyBuilder().heal(2).move(2).build();
+const rangedAttackerBody = new BodyBuilder().rangedAttack(4).tough(0).move(2).build();
+const attackerBody = new BodyBuilder().attack(4).tough(0).move(2).build();
+const carrierBody = new BodyBuilder().work(0).carry(2).move(2).build();
+const healerBody = new BodyBuilder().heal(1).move(2).build();
 
-const rangedAttackerExpectNum = 4;
-const attackerExpectNum = 10;
-const workerExpectNum = 3;
-const healerExpectNum = 2;
-
-const collectSiteDelta = { x: 0, y: -20 };
+const rangedAttackerExpectNum = 2;
+const attackerExpectNum = 2;
+const carrierExpectNum = 3;
+const healerExpectNum = 1;
 
 enum BattleStage {
   SpawnWorker,
@@ -26,13 +24,28 @@ enum BattleStage {
 }
 
 let stage = BattleStage.SpawnWorker;
+
+let mySpawn: StructureSpawn;
+let enemySpawn: StructureSpawn;
+let collectPoint: RoomPosition;
+  // Global store
+  function init() {
+    const { spawners } = getStructureByKind();
+    mySpawn = spawners.find(s => s.my) as StructureSpawn;
+    enemySpawn = spawners.find(s => !s.my) as StructureSpawn;
+    collectPoint = {
+      x: Math.ceil((mySpawn.x + enemySpawn.x) / 2),
+      y: Math.ceil(mySpawn.y - 40),
+    }
+  }
+
 export function loop(): void {
   // logCreeps();
   // console.log(`current stage: ${stage}`)
-  const { workers, attackers, rangedAttackers, healers, enemies } = getCreepsByKind();
-  const { spawners } = getStructureByKind();
-  const mySpawn = spawners.find(s => s.my) as StructureSpawn;
-  const enemySpawn = spawners.find(s => !s.my) as StructureSpawn;
+  if (getTicks() === 1) {
+    init();
+  }
+  const { carriers, attackers, rangedAttackers, healers, enemies } = getCreepsByKind();
   const allKindAttackers = [...attackers, ...rangedAttackers];
 
   switch (stage) {
@@ -40,9 +53,9 @@ export function loop(): void {
       if (
         doSpawnRequests(mySpawn, [
           {
-            bodyParts: workerBody,
-            num: workers.length,
-            expectNum: workerExpectNum
+            bodyParts: carrierBody,
+            num: carriers.length,
+            expectNum: carrierExpectNum
           }
         ])
       ) {
@@ -102,7 +115,7 @@ export function loop(): void {
     default:
       break;
   }
-  runWorkers(workers, mySpawn);
+  runWorkers(carriers, mySpawn);
 }
 
 function needDefense(mySpawn: StructureSpawn, enemies: Creep[]): boolean {
@@ -118,17 +131,20 @@ function needAttackBase(enemySpawn: StructureSpawn, enemies: Creep[]): boolean {
 function runWorkers(workers: SafeCreep[], mySpawn: StructureSpawn) {
   const containers = getObjectsByPrototype(StructureContainer);
   const myContainers = findInRange(mySpawn, containers, 10);
+  console.log(
+    `
+myContainers length ${myContainers.length}
+mySpawn ${mySpawn}
+`
+  )
   for (let i = 0; i < workers.length; i++) {
     const containerId = i % containers.length;
-    workers[i].harvestOrTransfer(myContainers[containerId], mySpawn, RESOURCE_ENERGY);
+    const err = workers[i].harvestOrTransfer(myContainers[containerId], mySpawn, RESOURCE_ENERGY);
+    console.log(`harvestOrTransfer failed for ${err}`);
   }
 }
 
 function collectArmy(members: SafeCreep[], mySpawn: StructureSpawn) {
-  const collectPoint = {
-    x: mySpawn.x + collectSiteDelta.x,
-    y: mySpawn.y + collectSiteDelta.y
-  };
   for (const a of members) {
     a.creep.moveTo(collectPoint);
   }
