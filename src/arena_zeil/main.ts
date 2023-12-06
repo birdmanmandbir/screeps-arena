@@ -115,19 +115,6 @@ export interface SpawnRequest {
   expectNum: number
 }
 
-type taskFunction = () => boolean
-
-function doTasksSeq(tasks: taskFunction[]): boolean {
-  for (let i = 0; i < tasks.length; i++) {
-    if (!tasks[i]())
-      return false
-
-    console.log(`finish task ${i}`)
-  }
-
-  return true
-}
-
 function doSpawnRequests(mySpawn: StructureSpawn, requests: SpawnRequest[]): boolean {
   for (const rq of requests) {
     //     console.log(`
