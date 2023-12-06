@@ -12,8 +12,12 @@ import {
 import { Creep, Source, Structure, StructureConstant, StructureContainer } from "game/prototypes";
 import { findInRange } from "game/utils";
 
-export function creep2SafeCreep(creep: Creep): SafeCreep {
+export function mapCreep2SafeCreep(creep: Creep): SafeCreep {
   return new SafeCreep(creep);
+}
+
+export function mapSafeCreep2Creep(sc: SafeCreep): Creep {
+  return sc.creep
 }
 
 // + auto move

@@ -1,19 +1,21 @@
 import { BodyPartConstant, RESOURCE_ENERGY } from "game/constants";
 import { Creep, RoomPosition, Structure, StructureConstant, StructureContainer, StructureSpawn } from "game/prototypes";
 import { findInRange, getObjectsByPrototype, getTicks } from "game/utils";
-import { BodyBuilder, getCreepsByKind } from "./creep";
-import { SafeCreep } from "./creep/safeCreep";
+import { BodyBuilder, getCreepsByUser, logCreeps } from "./creep";
+import { SafeCreep, mapSafeCreep2Creep } from "./creep/safeCreep";
 import { getStructureByKind } from "./structure";
 
-const rangedAttackerBody = new BodyBuilder().rangedAttack(4).tough(0).move(2).build();
-const attackerBody = new BodyBuilder().attack(4).tough(0).move(2).build();
-const carrierBody = new BodyBuilder().work(0).carry(2).move(2).build();
+const rangedAttackerBody = new BodyBuilder().rangedAttack(3).tough(0).move(2).build();
+const attackerBody = new BodyBuilder().attack(3).tough(0).move(2).build();
+const carrierBody = new BodyBuilder().carry(2).move(2).build();
 const healerBody = new BodyBuilder().heal(1).move(2).build();
+const workerBody = new BodyBuilder().work(2).carry(2).move().build();
 
-const rangedAttackerExpectNum = 2;
-const attackerExpectNum = 2;
+const rangedAttackerExpectNum = 10;
+const attackerExpectNum = 8;
 const carrierExpectNum = 3;
 const healerExpectNum = 1;
+const workerExpectNum = 1;
 
 enum BattleStage {
   SpawnWorker,
@@ -28,24 +30,27 @@ let stage = BattleStage.SpawnWorker;
 let mySpawn: StructureSpawn;
 let enemySpawn: StructureSpawn;
 let collectPoint: RoomPosition;
-  // Global store
-  function init() {
-    const { spawners } = getStructureByKind();
-    mySpawn = spawners.find(s => s.my) as StructureSpawn;
-    enemySpawn = spawners.find(s => !s.my) as StructureSpawn;
-    collectPoint = {
-      x: Math.ceil((mySpawn.x + enemySpawn.x) / 2),
-      y: Math.ceil(mySpawn.y - 40),
-    }
-  }
+// Global store
+function init() {
+  const { spawners } = getStructureByKind();
+  mySpawn = spawners.find(s => s.my) as StructureSpawn;
+  enemySpawn = spawners.find(s => !s.my) as StructureSpawn;
+  collectPoint = {
+    x: mySpawn.x,
+    y: 10
+  };
+}
 
 export function loop(): void {
-  // logCreeps();
+  logCreeps();
   // console.log(`current stage: ${stage}`)
   if (getTicks() === 1) {
     init();
   }
-  const { carriers, attackers, rangedAttackers, healers, enemies } = getCreepsByKind();
+  const { my, enemy } = getCreepsByUser();
+  const { carriers, attackers, rangedAttackers, healers } = my;
+  const { creeps: enemies } = enemy;
+
   const allKindAttackers = [...attackers, ...rangedAttackers];
 
   switch (stage) {
@@ -63,7 +68,7 @@ export function loop(): void {
       }
       break;
     case BattleStage.SpawnArmy:
-      collectArmy([...allKindAttackers, ...healers], mySpawn);
+      collectArmy([...allKindAttackers, ...healers]);
       if (
         doSpawnRequests(mySpawn, [
           {
@@ -81,9 +86,13 @@ export function loop(): void {
             num: healers.length,
             expectNum: healerExpectNum
           }
-        ])
+        ]) &&
+        collectArmy([...allKindAttackers, ...healers])
       ) {
         stage = BattleStage.Attack;
+      }
+      if (needDefense(mySpawn, enemies)) {
+        stage = BattleStage.Defense;
       }
       break;
     case BattleStage.Defense:
@@ -119,7 +128,7 @@ export function loop(): void {
 }
 
 function needDefense(mySpawn: StructureSpawn, enemies: Creep[]): boolean {
-  const defenseRange = 28;
+  const defenseRange = 40;
   return findInRange(mySpawn, enemies, defenseRange).length !== 0;
 }
 
@@ -131,12 +140,6 @@ function needAttackBase(enemySpawn: StructureSpawn, enemies: Creep[]): boolean {
 function runWorkers(workers: SafeCreep[], mySpawn: StructureSpawn) {
   const containers = getObjectsByPrototype(StructureContainer);
   const myContainers = findInRange(mySpawn, containers, 10);
-  console.log(
-    `
-myContainers length ${myContainers.length}
-mySpawn ${mySpawn}
-`
-  )
   for (let i = 0; i < workers.length; i++) {
     const containerId = i % containers.length;
     const err = workers[i].harvestOrTransfer(myContainers[containerId], mySpawn, RESOURCE_ENERGY);
@@ -144,10 +147,12 @@ mySpawn ${mySpawn}
   }
 }
 
-function collectArmy(members: SafeCreep[], mySpawn: StructureSpawn) {
+function collectArmy(members: SafeCreep[]): boolean {
   for (const a of members) {
     a.creep.moveTo(collectPoint);
   }
+  const collectRange = 5;
+  return findInRange(collectPoint, members.map(mapSafeCreep2Creep), collectRange).length === members.length;
 }
 
 function doAttack(attackers: SafeCreep[], enemies: Creep[] | Structure<StructureConstant>) {

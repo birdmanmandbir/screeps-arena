@@ -1,45 +1,61 @@
 import { ATTACK, BodyPartConstant, CARRY, HEAL, MOVE, RANGED_ATTACK, TOUGH, WORK } from "game/constants";
 import { Creep } from "game/prototypes";
 import { getObjectsByPrototype, getTicks } from "game/utils";
-import { SafeCreep } from "./safeCreep";
+import { SafeCreep, mapCreep2SafeCreep, mapSafeCreep2Creep } from "./safeCreep";
 
 export function filterCreepsByKind(creeps: SafeCreep[], kind: BodyPartConstant): SafeCreep[] {
   return creeps.filter(c => c.isMatchKind(kind));
 }
 
-export interface CreepsByKind {
-  attackers: SafeCreep[];
-  healers: SafeCreep[];
+export interface CreepsByKind{
+  attackers: SafeCreep[],
+  rangedAttackers: SafeCreep[],
+  healers: SafeCreep[]
   workers: SafeCreep[];
-  rangedAttackers: SafeCreep[];
   carriers: SafeCreep[];
-  enemies: Creep[];
+  creeps: Creep[]
 }
 
-export function getCreepsByKind(): CreepsByKind {
-  const creeps = getObjectsByPrototype(Creep).map(c => new SafeCreep(c));
-  const myCreeps = creeps.filter(c => c.isMy());
-  const enemies = creeps.filter(c => !c.isMy());
+export interface CreepsByUser {
+  my: CreepsByKind
+  enemy: CreepsByKind
+}
+
+function getCreepsByKind(creeps: SafeCreep[]): CreepsByKind {
   return {
-    attackers: filterCreepsByKind(myCreeps, ATTACK),
-    healers: filterCreepsByKind(myCreeps, HEAL),
-    workers: filterCreepsByKind(myCreeps, WORK),
-    rangedAttackers: filterCreepsByKind(myCreeps, RANGED_ATTACK),
-    carriers: filterCreepsByKind(myCreeps, CARRY),
-    enemies: enemies.map(e => e.creep)
+    attackers: filterCreepsByKind(creeps, ATTACK),
+    healers: filterCreepsByKind(creeps, HEAL),
+    workers: filterCreepsByKind(creeps, WORK),
+    rangedAttackers: filterCreepsByKind(creeps, RANGED_ATTACK),
+    carriers: filterCreepsByKind(creeps, CARRY),
+    creeps: creeps.map(mapSafeCreep2Creep)
   };
 }
 
-export function logCreeps() {
-  const { carriers, attackers, rangedAttackers, healers, enemies } = getCreepsByKind();
+export function getCreepsByUser(): CreepsByUser {
+  const creeps = getObjectsByPrototype(Creep).map(mapCreep2SafeCreep);
+  const myCreeps = creeps.filter(c => c.isMy());
+  const enemies = creeps.filter(c => !c.isMy());
+  return {
+    my: getCreepsByKind(myCreeps),
+    enemy: getCreepsByKind(enemies)
+  };
+}
 
-  console.log(`
-attackers: ${attackers.length}
-carriers: ${carriers.length}
-rangedAttackers: ${rangedAttackers.length}
-healers: ${healers.length}
-enemies: ${enemies.length}
-`);
+function strCreepsByKind(cbk: CreepsByKind): string {
+  return `
+total: ${cbk.creeps.length}
+army: ${[...cbk.attackers, ...cbk.rangedAttackers, ...cbk.healers].length}
+[${cbk.attackers.length} A ${cbk.rangedAttackers.length} RA ${cbk.healers.length} H]
+`
+}
+
+export function logCreeps() {
+  const { my, enemy} = getCreepsByUser()
+  console.log(`my statistic`)
+  console.log(strCreepsByKind(my))
+  console.log(`enemy statistic`)
+  console.log(strCreepsByKind(enemy))
 }
 
 export class BodyBuilder {
