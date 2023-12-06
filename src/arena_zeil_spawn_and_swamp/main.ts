@@ -17,6 +17,11 @@ const carrierExpectNum = 3;
 const healerExpectNum = 1;
 const workerExpectNum = 1;
 
+// when enemy in this range to our base, start to defense
+const defenseRange = 30;
+// when enemy base has enemy creep in this range, attack enemy creeps
+const attackCreepRange = 28;
+
 enum BattleStage {
   SpawnWorker,
   SpawnArmy,
@@ -124,26 +129,21 @@ export function loop(): void {
     default:
       break;
   }
-  runWorkers(carriers, mySpawn);
+  runWorkers(carriers);
 }
 
 function needDefense(mySpawn: StructureSpawn, enemies: Creep[]): boolean {
-  const defenseRange = 40;
   return findInRange(mySpawn, enemies, defenseRange).length !== 0;
 }
 
 function needAttackBase(enemySpawn: StructureSpawn, enemies: Creep[]): boolean {
-  const attackCreepRange = 28;
   return findInRange(enemySpawn, enemies, attackCreepRange).length === 0;
 }
 
-function runWorkers(workers: SafeCreep[], mySpawn: StructureSpawn) {
-  const containers = getObjectsByPrototype(StructureContainer);
-  const myContainers = findInRange(mySpawn, containers, 10);
+function runWorkers(workers: SafeCreep[]) {
   for (let i = 0; i < workers.length; i++) {
-    const containerId = i % containers.length;
-    const err = workers[i].harvestOrTransfer(myContainers[containerId], mySpawn, RESOURCE_ENERGY);
-    console.log(`harvestOrTransfer failed for ${err}`);
+    const err = workers[i].autoHarvestContainerAndTransfer(RESOURCE_ENERGY);
+    console.log(`harvest failed for ${err}`);
   }
 }
 

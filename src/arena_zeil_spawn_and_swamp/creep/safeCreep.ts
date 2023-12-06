@@ -9,15 +9,25 @@ import {
   ResourceConstant,
   ScreepsReturnCode
 } from "game/constants";
-import { Creep, Source, Structure, StructureConstant, StructureContainer } from "game/prototypes";
-import { findInRange } from "game/utils";
+import {
+  Creep,
+  Source,
+  Structure,
+  StructureConstant,
+  StructureContainer,
+  StructureExtensionConstructor,
+  StructureSpawn,
+  StructureSpawnConstructor,
+  _Constructor
+} from "game/prototypes";
+import { findInRange, getObjectsByPrototype } from "game/utils";
 
 export function mapCreep2SafeCreep(creep: Creep): SafeCreep {
   return new SafeCreep(creep);
 }
 
 export function mapSafeCreep2Creep(sc: SafeCreep): Creep {
-  return sc.creep
+  return sc.creep;
 }
 
 // + auto move
@@ -46,11 +56,11 @@ export class SafeCreep {
 
   selectTarget(targets: Creep[]): Creep | null {
     if (targets.length === 0) {
-      return null
+      return null;
     }
-    const accurateSelectRange = 30
+    const accurateSelectRange = 30;
     if (this.creep.findInRange(targets, accurateSelectRange).length === 0) {
-      return targets[0]
+      return targets[0];
     }
     return this.creep.findClosestByPath(targets);
   }
@@ -58,10 +68,10 @@ export class SafeCreep {
   autoAttack(targetsOrStructure: Creep[] | Structure<StructureConstant>) {
     let target: Creep | Structure<StructureConstant> | null;
     if (Array.isArray(targetsOrStructure)) {
-      target = this.selectTarget(targetsOrStructure)
+      target = this.selectTarget(targetsOrStructure);
       if (!target) return;
     } else {
-      target = targetsOrStructure
+      target = targetsOrStructure;
     }
     if (this.isMatchKind(ATTACK)) {
       this.attack(target);
@@ -126,8 +136,7 @@ export class SafeCreep {
     return err;
   }
 
-  // TODO container maybe also need this
-  harvestOrTransfer(
+  private harvestAndTransfer(
     src: Source | StructureContainer,
     dest: Structure<StructureConstant>,
     resourceType: ResourceConstant,
@@ -144,6 +153,22 @@ export class SafeCreep {
     } else {
       return this.transfer(dest, resourceType, amount);
     }
+  }
+
+  // when we have more spawns and extensions, this could automatically select best src and dest
+  autoHarvestContainerAndTransfer(resourceType: ResourceConstant, amount?: number | undefined): ScreepsReturnCode {
+    const containers = getObjectsByPrototype(StructureContainer).filter(c => c.store[resourceType] > 0);
+    // by path maybe slow when the distance is large
+    const src = this.creep.findClosestByRange(containers);
+    if (!src) {
+      return OK;
+    }
+    const dests = getObjectsByPrototype(StructureSpawn).filter(d => d.my);
+    const dest = this.creep.findClosestByRange(dests);
+    if (!dest) {
+      return OK;
+    }
+    return this.harvestAndTransfer(src, dest, resourceType, amount);
   }
 
   withdraw(
