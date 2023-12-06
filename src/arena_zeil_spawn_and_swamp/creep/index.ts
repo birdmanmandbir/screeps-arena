@@ -107,6 +107,7 @@ export class BodyBuilder {
   }
 
   build(): BodyPartConstant[] {
-    return this.bodyParts
+    // make move to start, so the central body part will not be destruct before the move
+    return this.bodyParts.reverse()
   }
 }

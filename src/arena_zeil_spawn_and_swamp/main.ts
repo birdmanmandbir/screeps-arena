@@ -7,20 +7,23 @@ import type { SafeCreep } from './creep/safeCreep'
 import { mapSafeCreep2Creep } from './creep/safeCreep'
 import { getStructureByKind } from './structure'
 
-const rangedAttackerBody = new BodyBuilder().rangedAttack(3).tough(0).move(2).build()
-const attackerBody = new BodyBuilder().attack(3).tough(0).move(2).build()
+// TODO: multiple wave of spawn
+// NOTE: rangedAttacker can also do some healing job?
+const rangedAttackerBody = new BodyBuilder().rangedAttack(3).move(2).build()
+const attackerBody = new BodyBuilder().attack(3).move(3).build()
 const carrierBody = new BodyBuilder().carry(2).move(2).build()
 const healerBody = new BodyBuilder().heal(1).move(2).build()
-const workerBody = new BodyBuilder().work(2).carry(2).move().build()
+// TODO: construct spawns/containers
+const _workerBody = new BodyBuilder().work(2).carry(2).move().build()
 
-const rangedAttackerExpectNum = 10
-const attackerExpectNum = 8
+const rangedAttackerExpectNum = 8
+const attackerExpectNum = 6
 const carrierExpectNum = 3
-const healerExpectNum = 1
-const workerExpectNum = 1
+const healerExpectNum = 3
+const _workerExpectNum = 1
 
 // when enemy in this range to our base, start to defense
-const defenseRange = 30
+const defenseRange = 80
 // when enemy base has enemy creep in this range, attack enemy creeps
 const attackCreepRange = 28
 
@@ -56,7 +59,11 @@ export function loop(): void {
 
   const { my, enemy } = getCreepsByUser()
   const { carriers, attackers, rangedAttackers, healers } = my
-  const { creeps: enemies } = enemy
+  const enemies = [...enemy.attackers, ...enemy.rangedAttackers, ...enemy.healers].map(mapSafeCreep2Creep)
+  // TODO: maybe attack worker sometimes
+  // TODO: 1. develop different strategy: (attack workers fast, get many army then attack, etc..)
+  // TODO: 2. select strategy dynamically and flexiblely
+  const _enemyWorkers = enemy.carriers.map(mapSafeCreep2Creep)
 
   const allKindAttackers = [...attackers, ...rangedAttackers]
 
@@ -98,15 +105,16 @@ export function loop(): void {
       )
         stage = BattleStage.Attack
 
-      if (needDefense(mySpawn, enemies))
+      if (needDefense(enemies))
         stage = BattleStage.Defense
 
       break
+    // TODO: split defense/attack with spawn, if creep is arrive range of collectPoint, it should be move out the collect list?
     case BattleStage.Defense:
       doDefense(allKindAttackers, enemies)
       moveHealersToAttackers(healers, allKindAttackers)
       doHeal(healers, allKindAttackers)
-      if (!needDefense(mySpawn, enemies))
+      if (!needDefense(enemies))
         stage = BattleStage.Attack
 
       break
@@ -114,7 +122,7 @@ export function loop(): void {
       doAttack(allKindAttackers, enemies)
       moveHealersToAttackers(healers, allKindAttackers)
       doHeal(healers, allKindAttackers)
-      if (needDefense(mySpawn, enemies))
+      if (needDefense(enemies))
         stage = BattleStage.Defense
 
       if (needAttackBase(enemySpawn, enemies))
@@ -125,7 +133,7 @@ export function loop(): void {
       doAttack(allKindAttackers, enemySpawn)
       moveHealersToAttackers(healers, allKindAttackers)
       doHeal(healers, allKindAttackers)
-      if (needDefense(mySpawn, enemies))
+      if (needDefense(enemies))
         stage = BattleStage.Defense
       break
     default:
@@ -134,8 +142,8 @@ export function loop(): void {
   runWorkers(carriers)
 }
 
-function needDefense(mySpawn: StructureSpawn, enemies: Creep[]): boolean {
-  return findInRange(mySpawn, enemies, defenseRange).length !== 0
+function needDefense(enemies: Creep[]): boolean {
+  return findInRange(collectPoint, enemies, defenseRange).length !== 0
 }
 
 function needAttackBase(enemySpawn: StructureSpawn, enemies: Creep[]): boolean {
