@@ -18,10 +18,10 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "build": "rollup -c && cp -r dist/arena_zeil_spawn_and_swamp/* /Users/neil/ScreepsArena/alpha-spawn_and_swamp/",
+    "build": "bun build.js",
     "test": "npm run test-unit",
     "test-unit": "mocha test/unit/**/*.ts",
-    "watch": "rollup -cw --config-",
+    "watch": "",
     "deploy-tutorial": "cp -r dist/arena_zeil/* ~/ScreepsArena/tutorial-final_test/"
   },
   "dependencies": {
@@ -29,8 +29,6 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.3.4",
-    "@rollup/plugin-commonjs": "^25.0.7",
-    "@rollup/plugin-node-resolve": "^15.2.3",
     "@types/chai": "^4.1.6",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.2",
@@ -43,14 +41,8 @@
     "eslint": "^8.55.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.26.0",
-    "fast-glob": "^3.2.5",
     "lodash": "^4.17.21",
     "mocha": "^10.2.0",
-    "rollup": "^4.6.1",
-    "rollup-plugin-clear": "^2.0.7",
-    "rollup-plugin-delete": "^2.0.0",
-    "rollup-plugin-screeps": "^1.0.0",
-    "rollup-plugin-typescript2": "^0.36.0",
     "sinon": "^17.0.1",
     "sinon-chai": "^3.2.0",
     "tsconfig-paths": "^4.2.0",
