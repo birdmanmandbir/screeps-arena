@@ -1,5 +1,5 @@
-import { StructureContainer, StructureSpawn, StructureTower } from "game/prototypes";
-import { getObjectsByPrototype } from "game/utils";
+import { StructureContainer, StructureSpawn, StructureTower } from 'game/prototypes'
+import { getObjectsByPrototype } from 'game/utils'
 
 export interface StructureByKind {
   containers: StructureContainer[]
@@ -17,4 +17,3 @@ export function getStructureByKind(): StructureByKind {
     spawners,
   }
 }
-

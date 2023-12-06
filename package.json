@@ -1,30 +1,34 @@
 {
   "name": "screeps-arena-typescript-starter",
+  "type": "module",
   "version": "3.0.0",
   "description": "",
+  "author": "",
+  "license": "Unlicense",
+  "homepage": "https://github.com/screepers/screeps-arena-typescript-starter#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/screepers/screeps-arena-typescript-starter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/screepers/screeps-arena-typescript-starter/issues"
+  },
   "main": "index.js",
-  "type": "module",
   "//": "If you add or change the names of destinations in screeps.json, make sure you update these scripts to reflect the changes",
   "scripts": {
-    "lint": "eslint \"src/**/*.ts\"",
-    "format": "prettier --write --ignore-unknown --ignore-path .gitignore '**/*'",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "build": "rollup -c && cp -r dist/arena_zeil_spawn_and_swamp/* /Users/neil/ScreepsArena/alpha-spawn_and_swamp/",
     "test": "npm run test-unit",
     "test-unit": "mocha test/unit/**/*.ts",
     "watch": "rollup -cw --config-",
     "deploy-tutorial": "cp -r dist/arena_zeil/* ~/ScreepsArena/tutorial-final_test/"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/screepers/screeps-arena-typescript-starter.git"
+  "dependencies": {
+    "source-map": "~0.7.4"
   },
-  "author": "",
-  "license": "Unlicense",
-  "bugs": {
-    "url": "https://github.com/screepers/screeps-arena-typescript-starter/issues"
-  },
-  "homepage": "https://github.com/screepers/screeps-arena-typescript-starter#readme",
   "devDependencies": {
+    "@antfu/eslint-config": "^2.3.4",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@types/chai": "^4.1.6",
@@ -36,15 +40,12 @@
     "@typescript-eslint/eslint-plugin": "^6.13.1",
     "@typescript-eslint/parser": "^6.13.1",
     "chai": "^4.2.0",
-    "eslint": "^8.13.0",
-    "eslint-config-prettier": "^9.1.0",
+    "eslint": "^8.55.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-prettier": "^5.0.1",
     "fast-glob": "^3.2.5",
     "lodash": "^4.17.21",
     "mocha": "^10.2.0",
-    "prettier": "^3.1.0",
     "rollup": "^4.6.1",
     "rollup-plugin-clear": "^2.0.7",
     "rollup-plugin-delete": "^2.0.0",
@@ -54,8 +55,5 @@
     "sinon-chai": "^3.2.0",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.3.2"
-  },
-  "dependencies": {
-    "source-map": "~0.7.4"
   }
 }

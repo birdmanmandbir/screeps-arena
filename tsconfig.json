@@ -1,19 +1,19 @@
 {
   "compilerOptions": {
-    "module": "esnext",
-    "lib": ["esnext"],
     "target": "es2017",
-    "moduleResolution": "Node10",
-    "outDir": "dist",
-    "baseUrl": "src/",
-    "sourceMap": true,
-    "strict": true,
+    "lib": ["esnext"],
     "experimentalDecorators": true,
-    "noImplicitReturns": true,
-    "allowSyntheticDefaultImports": true,
-    "allowUnreachableCode": false,
+    "baseUrl": "src/",
+    "module": "esnext",
+    "moduleResolution": "Node10",
+    "typeRoots": ["./node_modules/@types", "./@types", "./node_modules/@types/screeps-arena/dist"],
     "types": ["game", "arena", "node"],
-    "typeRoots": ["./node_modules/@types", "./@types", "./node_modules/@types/screeps-arena/dist"]
+    "strict": true,
+    "allowUnreachableCode": false,
+    "noImplicitReturns": true,
+    "outDir": "dist",
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true
   },
   "exclude": ["node_modules"]
 }
